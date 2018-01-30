@@ -1,5 +1,4 @@
-# Autodidact: a pedagogical implementation of
-[Autograd](https://github.com/hips/autograd)
+# Autodidact: a pedagogical implementation of [Autograd](https://github.com/hips/autograd)
 
 This is a tutorial implementation based on [the full version of
 Autograd](https://github.com/hips/autograd).
