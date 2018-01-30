@@ -2,12 +2,12 @@
 
 import numpy as np
 
-from .util import unary_to_nary
-from .core import make_vjp as _make_vjp
+from .core import make_vjp
+from .util import subval
 
-make_vjp = unary_to_nary(_make_vjp)
-
-@unary_to_nary
-def grad(fun, x):
-    vjp, ans = _make_vjp(fun, x)
-    return vjp(np.ones_like(ans))
+def grad(fun, argnum=0):
+    def gradfun(*args, **kwargs):
+        unary_fun = lambda x: fun(*subval(args, argnum, x), **kwargs)
+        vjp, ans = make_vjp(unary_fun, args[argnum])
+        return vjp(np.ones_like(ans))
+    return gradfun
