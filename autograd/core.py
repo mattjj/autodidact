@@ -9,7 +9,7 @@ def make_vjp(fun, x):
     start_node = Node.new_root()
     end_value, end_node = trace(start_node, fun, x)
     if end_node is None:
-        def vjp(g): return np.zeros_like(g)
+        def vjp(g): return np.zeros_like(x)
     else:
         def vjp(g): return backward_pass(g, end_node)
     return vjp, end_value
