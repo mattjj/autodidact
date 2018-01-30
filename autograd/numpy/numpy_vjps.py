@@ -47,11 +47,12 @@ defvjp(anp.where, None,
 
 # ----- Dot grads -----
 
-# These definitions only work for arrays of rank 0, 1, or 2.
-
 def _dot_vjp_0(g, ans, lhs, rhs):
+  if max(anp.ndim(lhs), anp.ndim(rhs)) > 2:
+    raise NotImplementedError("Current dot vjps only support ndim <= 2.")
+
   if anp.ndim(lhs) == 0:
-    return unbroadcast(lhs, rhs * g)
+    return anp.sum(rhs * g)
   if anp.ndim(lhs) == 1 and anp.ndim(rhs) == 1:
     return g * rhs
   if anp.ndim(lhs) == 2 and anp.ndim(rhs) == 1:
@@ -61,8 +62,11 @@ def _dot_vjp_0(g, ans, lhs, rhs):
   return anp.dot(g, rhs.T)
 
 def _dot_vjp_1(g, ans, lhs, rhs):
+  if max(anp.ndim(lhs), anp.ndim(rhs)) > 2:
+    raise NotImplementedError("Current dot vjps only support ndim <= 2.")
+
   if anp.ndim(rhs) == 0:
-    return unbroadcast(rhs, lhs * g)
+    return anp.sum(lhs * g)
   if anp.ndim(lhs) == 1 and anp.ndim(rhs) == 1:
     return g * lhs
   if anp.ndim(lhs) == 2 and anp.ndim(rhs) == 1:

@@ -51,7 +51,6 @@ def unary_to_nary(unary_operator):
         return nary_f
     return nary_operator
 
-
 def wraps(fun, namestr="{fun}", docstr="{doc}", **kwargs):
     def _wraps(f):
         try:
