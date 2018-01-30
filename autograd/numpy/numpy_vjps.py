@@ -42,8 +42,11 @@ defvjp(anp.sinh,   lambda g, ans, x: g * anp.cosh(x))
 defvjp(anp.cosh,   lambda g, ans, x: g * anp.sinh(x))
 
 defvjp(anp.where, None,
-       lambda ans, c, x=None, y=None : lambda g: anp.where(c, g, anp.zeros(g.shape)),
-       lambda ans, c, x=None, y=None : lambda g: anp.where(c, anp.zeros(g.shape), g))
+       lambda g, ans, c, x=None, y=None: anp.where(c, g, anp.zeros(g.shape)),
+       lambda g, ans, c, x=None, y=None: anp.where(c, anp.zeros(g.shape), g))
+
+defvjp(anp.reshape, lambda g, ans, x, shape, order=None:
+       anp.reshape(g, anp.shape(x), order=order))
 
 # ----- Dot grads -----
 
