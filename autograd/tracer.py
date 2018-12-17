@@ -1,7 +1,7 @@
 from collections import defaultdict
 from contextlib import contextmanager
 
-from util import subvals, wraps
+from .util import subvals, wraps
 
 def trace(start_node, fun, x):
     with trace_stack.new_trace() as trace_id:
