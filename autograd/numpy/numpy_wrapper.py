@@ -37,7 +37,6 @@ nograd_functions = [
     _np.isclose,
     _np.iscomplex,
     _np.iscomplexobj,
-    _np.iscomplexobj,
     _np.isfinite,
     _np.isinf,
     _np.isnan,
@@ -52,22 +51,17 @@ nograd_functions = [
     _np.logical_or,
     _np.logical_xor,
     _np.ndim,
-    _np.ndim,
     _np.nonzero,
     _np.not_equal,
     _np.ones_like,
-    _np.ones_like,
-    _np.result_type,
     _np.result_type,
     _np.rint,
     _np.round,
     _np.searchsorted,
     _np.shape,
-    _np.shape,
     _np.sign,
     _np.size,
     _np.trunc,
-    _np.zeros_like,
     _np.zeros_like,
 ]
 
@@ -95,10 +89,13 @@ def wrap_namespace(old, new):
             # Functions with gradients. We trace values.
             new[name] = primitive(obj)
         elif type(obj) is type and obj in int_types:
-            # ???
+            # Wrap int types with something identical except that calls to __new__
+            # immediately strip argument of boxes.
+            #
+            # TODO(duckworthd): Why do numpy int types need to be boxed, but not
+            # Python's int()?
             new[name] = wrap_intdtype(obj)
         elif type(obj) in unchanged_types:
-            # ???
             new[name] = obj
 
 # Set autograd.numpy.<function> = wrap(numpy.<function>)

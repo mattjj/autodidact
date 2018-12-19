@@ -64,7 +64,9 @@ def primitive(f_raw):
     invocation can be recorded."""
     @wraps(f_raw)
     def f_wrapped(*args, **kwargs):
-        # Fetch boxed arguments with largest trace_id.
+        # Fetch boxed arguments with largest trace_id.  This ensures that the
+        # computational graph being constructed only consists of other nodes
+        # from the same call to trace().
         boxed_args, trace_id = find_top_boxed_args(args)
         if boxed_args:
             # Replace some elements of args with corresponding unboxed values.
@@ -76,6 +78,10 @@ def primitive(f_raw):
             argnums = tuple(argnum for argnum, _ in boxed_args)
 
             # Calculate result of applying original numpy function.
+            #
+            # Note that we use a recursive call here in order to also augment
+            # outer calls to trace() with lower trace_ids. See TraceStack's
+            # docstring for details.
             ans = f_wrapped(*argvals, **kwargs)
 
             # Create a new node
@@ -86,25 +92,31 @@ def primitive(f_raw):
     return f_wrapped
 
 def notrace_primitive(f_raw):
-    """Wrap a raw numpy function by discarding boxes."""
+    """Wrap a raw numpy function by discarding boxes.
+
+    Results are not boxed. Unboxing is a signal that the output is constant wrt
+    f_raw()'s arguments.
+    """
+    # TODO(duckworthd): Verify that the above docstring is accurate.
+
     # TODO(duckworthd): No need for @wraps(f_raw)?
     def f_wrapped(*args, **kwargs):
         # Extract np.ndarray values from boxed values.
         argvals = map(getval, args)
 
-        # Call original function.
-        #
-        # TODO(duckworthd): No need to re-box results?.
+        # Call original function. Note that f_raw()'s arguments may be boxed,
+        # but with a lower trace_id.
         return f_raw(*argvals, **kwargs)
     return f_wrapped
 
 def find_top_boxed_args(args):
     """Finds boxed arguments with largest trace_id.
 
-    Assumes args are in order of ascending trace_id.
+    Equivalent to finding the largest trace_id of any argument, keeping args
+    with the same, and dropping the remainder.
 
     Args:
-      args: Arguments to function in autograd.numpy
+      args: Arguments to function wrapped by primitive().
 
     Returns:
       top_boxes: List of (index, boxed argument). Arguments have same, largest
@@ -123,12 +135,33 @@ def find_top_boxed_args(args):
     return top_boxes, top_trace_id
 
 class TraceStack(object):
-    """Tracks depth of function calls."""
+    """Tracks number of times trace() has been called.
+
+    This is critical to ensure calling grad() on a function that also calls
+    grad() resolves correctly. For example,
+
+    ```
+    def f(x):
+      def g(y):
+        return x * y
+      return grad(g)(x)
+
+    y = grad(f)(5.)
+    ```
+
+    First, grad(f)(5.) wraps 5. in a Box and calls f(Box(5)). Then, grad(g)(x)
+    wraps Box(5) again and calls g(Box(Box(5)). When computing grad(g), we want
+    to treat x=Box(5) as fixed -- it's not a direct argument to g(). How does
+    Autograd know that x is fixed, when all it can see is
+    np.multipy(Box(5.), Box(Box(5.))? Because the second argument has a larger
+    trace_id than the former!
+    """
     def __init__(self):
         self.top = -1
 
     @contextmanager
     def new_trace(self):
+        """Increment trace depth."""
         self.top += 1
         yield self.top
         self.top -= 1
@@ -166,19 +199,33 @@ class Box(object):
         Should be called immediately after declaration.
 
         Args:
-          cls: Inherits from Box. Type to box values of type 'value_type'self.
+          cls: Inherits from Box. Type to box values of type 'value_type'.
           value_type: Type to be boxed.
         """
         Box.types.add(cls)
         Box.type_mappings[value_type] = cls
+
+        # The Box implementation for a Box type is itself. Why? Imagine a nested
+        # call to grad(). One doesn't want the inner Box's computation graph to
+        # interact with the outer Box's.
         Box.type_mappings[cls] = cls
 
 
 box_type_mappings = Box.type_mappings
 
-def new_box(value, trace, node):
+def new_box(value, trace_id, node):
+    """Box an unboxed value.
+
+    Args:
+      value: unboxed value
+      trace_id: int. Trace stack depth.
+      node: Node corresponding to this boxed value.
+
+    Returns:
+      Boxed value.
+    """
     try:
-        return box_type_mappings[type(value)](value, trace, node)
+        return box_type_mappings[type(value)](value, trace_id, node)
     except KeyError:
         raise TypeError("Can't differentiate w.r.t. type {}".format(type(value)))
 
