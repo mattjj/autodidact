@@ -1,3 +1,12 @@
+"""Vector-Jacobian products for NumPy functions.
+
+This library consists of implementations of vector-Jacobian products (vjps, gradients)
+for functions implemented in numpy. Each function-argument index pair is
+provided a gradient function registered with defvjp().
+
+Notice that vjps are implemented with (autograd-wrapped) functions as well. This
+is the magic that allows one to compute gradients-of-gradients!
+"""
 from __future__ import absolute_import
 import numpy as onp
 from . import numpy_wrapper as anp
@@ -20,9 +29,15 @@ defvjp(anp.power,
     lambda g, ans, x, y: unbroadcast(y, g * anp.log(replace_zero(x, 1.)) * x ** y))
 
 def replace_zero(x, val):
+    """Replace all zeros in 'x' with 'val'."""
     return anp.where(x, x, val)
 
 def unbroadcast(target, g, broadcast_idx=0):
+    """Remove broadcasted dimensions by summing along them.
+
+    When computing gradients of a broadcasted value, this is the right thing to
+    do when computing the total derivative and accounting for cloning.
+    """
     while anp.ndim(g) > anp.ndim(target):
         g = anp.sum(g, axis=broadcast_idx)
     for axis, size in enumerate(anp.shape(target)):

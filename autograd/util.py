@@ -1,10 +1,23 @@
+"""Utility functions."""
+
+
 def subvals(x, ivs):
+    """Replace the i-th value of x with v.
+
+    Args:
+      x: iterable of items.
+      ivs: list of (int, value) pairs.
+
+    Returns:
+      x modified appropriately.
+    """
     x_ = list(x)
     for i, v in ivs:
         x_[i] = v
     return tuple(x_)
 
 def subval(x, i, v):
+    """Replace the i-th value of x with v."""
     x_ = list(x)
     x_[i] = v
     return tuple(x_)
@@ -31,6 +44,20 @@ def toposort(end_node):
                 child_counts[parent] -= 1
 
 def wraps(fun, namestr="{fun}", docstr="{doc}", **kwargs):
+    """Decorator for a function wrapping another.
+
+    Used when wrapping a function to ensure its name and docstring get copied
+    over.
+
+    Args:
+      fun: function to be wrapped
+      namestr: Name string to use for wrapped function.
+      docstr: Docstring to use for wrapped function.
+      **kwargs: additional string format values.
+
+    Return:
+      Wrapped function.
+    """
     def _wraps(f):
         try:
             f.__name__ = namestr.format(fun=get_name(fun), **kwargs)
