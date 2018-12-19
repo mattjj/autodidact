@@ -94,18 +94,24 @@ def primitive(f_raw):
 def notrace_primitive(f_raw):
     """Wrap a raw numpy function by discarding boxes.
 
-    Results are not boxed. Unboxing is a signal that the output is constant wrt
-    f_raw()'s arguments.
-    """
-    # TODO(duckworthd): Verify that the above docstring is accurate.
+    Results are not boxed. Unboxing is a signal that the f_raw() is
+    non-differentiable with respect to its arguments. Consider the computation,
 
-    # TODO(duckworthd): No need for @wraps(f_raw)?
+    ```
+    x = 1.5
+    y = np.floor(x) + x
+    ```
+
+    What is the derivative of y wrt x? Autograd says 1. as np.floor has zero
+    derivative near x=1.5.
+    """
+    @wraps(f_raw)
     def f_wrapped(*args, **kwargs):
         # Extract np.ndarray values from boxed values.
         argvals = map(getval, args)
 
-        # Call original function. Note that f_raw()'s arguments may be boxed,
-        # but with a lower trace_id.
+        # Call original function. Note that f_raw()'s arguments may still be
+        # boxed, but with a lower trace_id.
         return f_raw(*argvals, **kwargs)
     return f_wrapped
 
