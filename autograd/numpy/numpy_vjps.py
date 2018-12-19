@@ -15,6 +15,8 @@ defvjp(anp.subtract,    lambda g, ans, x, y : unbroadcast(x, g),
                         lambda g, ans, x, y : unbroadcast(y, -g))
 defvjp(anp.divide,      lambda g, ans, x, y : unbroadcast(x,   g / y),
                         lambda g, ans, x, y : unbroadcast(y, - g * x / y**2))
+defvjp(anp.true_divide, lambda g, ans, x, y : unbroadcast(x,   g / y),
+                        lambda g, ans, x, y : unbroadcast(y, - g * x / y**2))
 defvjp(anp.power,
     lambda g, ans, x, y: unbroadcast(x, g * y * x ** anp.where(y, y - 1, 1.)),
     lambda g, ans, x, y: unbroadcast(y, g * anp.log(replace_zero(x, 1.)) * x ** y))

@@ -2,8 +2,8 @@ from collections import defaultdict
 from itertools import count
 import numpy as np
 
-from tracer import trace, Node
-from util import toposort
+from .tracer import trace, Node
+from .util import toposort
 
 def make_vjp(fun, x):
     start_node = Node.new_root()
