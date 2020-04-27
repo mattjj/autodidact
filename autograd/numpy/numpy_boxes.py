@@ -1,3 +1,9 @@
+"""Box type for np.ndarray.
+
+This library contains a wrapper for np.ndarray with methods that uses
+autograd-wrapped numpy functions rather than their originals. This is necessary
+to ensure all transformations of an np.ndarray are traced.
+"""
 from __future__ import absolute_import
 import numpy as np
 from autograd.tracer import Box, primitive
@@ -6,7 +12,16 @@ from . import numpy_wrapper as anp
 Box.__array_priority__ = 90.0
 
 class ArrayBox(Box):
+    """Box for np.ndarray.
+
+    Anything you can do with an np.ndarray, you can do with an ArrayBox.
+    """
+
+    # This class has no attributes.
     __slots__ = []
+
+    # Used by NumPy to determine which type gets returned when there are
+    # multiple possibilities. Larger numbers == higher priority.
     __array_priority__ = 100.0
 
     @primitive
@@ -47,18 +62,46 @@ class ArrayBox(Box):
     def __abs__(self): return anp.abs(self)
     def __hash__(self): return id(self)
 
+# Register ArrayBox as the type to use when boxing np.ndarray and scalar values.
 ArrayBox.register(np.ndarray)
 for type_ in [float, np.float64, np.float32, np.float16,
               complex, np.complex64, np.complex128]:
     ArrayBox.register(type_)
 
-# These numpy.ndarray methods are just refs to an equivalent numpy function
-nondiff_methods = ['all', 'any', 'argmax', 'argmin', 'argpartition',
-                   'argsort', 'nonzero', 'searchsorted', 'round']
-diff_methods = ['clip', 'compress', 'cumprod', 'cumsum', 'diagonal',
-                'max', 'mean', 'min', 'prod', 'ptp', 'ravel', 'repeat',
-                'reshape', 'squeeze', 'std', 'sum', 'swapaxes', 'take',
-                'trace', 'transpose', 'var']
+# Set ArrayBox.<method name> = autograd.numpy.<function_name>
+nondiff_methods = [
+    'all',
+    'any',
+    'argmax',
+    'argmin',
+    'argpartition',
+    'argsort',
+    'nonzero',
+    'searchsorted',
+    'round']
+
+diff_methods = [
+    'clip',
+    'compress',
+    'cumprod',
+    'cumsum',
+    'diagonal',
+    'max',
+    'mean',
+    'min',
+    'prod',
+    'ptp',
+    'ravel',
+    'repeat',
+    'reshape',
+    'squeeze',
+    'std',
+    'sum',
+    'swapaxes',
+    'take',
+    'trace',
+    'transpose',
+    'var']
 for method_name in nondiff_methods + diff_methods:
     setattr(ArrayBox, method_name, anp.__dict__[method_name])
 
